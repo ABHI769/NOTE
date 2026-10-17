@@ -1149,6 +1149,69 @@
      APP VIEW ROUTING & INITIALIZATION
      ========================================================================== */
 
+  /* ==========================================================================
+     LIGHT GRADIENT THEME CONTROLLER
+     ========================================================================== */
+
+  const THEME_STORAGE_KEY = 'silvernote_gradient_theme_v1';
+  const THEME_NAMES = {
+    aurora: 'Aurora Pastel',
+    sunset: 'Sunset Glow',
+    ocean: 'Ocean Breeze',
+    lilac: 'Lilac Dream'
+  };
+
+  function applyTheme(themeKey) {
+    if (!THEME_NAMES[themeKey]) themeKey = 'aurora';
+    document.documentElement.setAttribute('data-theme', themeKey);
+    localStorage.setItem(THEME_STORAGE_KEY, themeKey);
+
+    const activeThemeNameEl = document.getElementById('activeThemeName');
+    if (activeThemeNameEl) {
+      activeThemeNameEl.textContent = THEME_NAMES[themeKey].split(' ')[0];
+    }
+
+    // Update active class on dropdown buttons
+    document.querySelectorAll('.theme-opt-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.themeVal === themeKey);
+    });
+  }
+
+  function initThemePicker() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'aurora';
+    applyTheme(savedTheme);
+
+    const themePickerBtn = document.getElementById('themePickerBtn');
+    const themeDropdown = document.getElementById('themeDropdown');
+
+    if (themePickerBtn && themeDropdown) {
+      themePickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !themeDropdown.classList.contains('hidden');
+        themeDropdown.classList.toggle('hidden');
+        themePickerBtn.setAttribute('aria-expanded', !isOpen);
+      });
+
+      document.querySelectorAll('.theme-opt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const selected = btn.dataset.themeVal;
+          applyTheme(selected);
+          themeDropdown.classList.add('hidden');
+          themePickerBtn.setAttribute('aria-expanded', 'false');
+          showToast(`Applied ${THEME_NAMES[selected]} theme`, 'success');
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!themeDropdown.classList.contains('hidden') && !e.target.closest('#themePickerContainer')) {
+          themeDropdown.classList.add('hidden');
+          themePickerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  }
+
   function renderAppView() {
     updateAdminButtonBadge();
 
@@ -1176,6 +1239,7 @@
   }
 
   function initApp() {
+    initThemePicker();
     initializeSampleDataIfEmpty();
 
     const storedSession = getStoredSession();
