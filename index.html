@@ -15,7 +15,11 @@
 </head>
 <body>
   <!-- Ambient background glow elements -->
-  <div class="silver-bg-mesh"></div>
+  <div class="silver-bg-mesh">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+  </div>
 
   <!-- Top Navigation Header -->
   <header class="app-header">
@@ -31,6 +35,46 @@
       </div>
 
       <div class="header-actions">
+        <!-- Light Gradient Theme Selector -->
+        <div class="theme-picker-container" id="themePickerContainer">
+          <button id="themePickerBtn" class="btn-silver-outline theme-toggle-btn" title="Choose Gradient Color Theme" aria-haspopup="true" aria-expanded="false">
+            <i data-lucide="palette"></i>
+            <span class="theme-btn-label"><span class="theme-btn-prefix">Gradient:</span> <strong id="activeThemeName">Aurora</strong></span>
+            <i data-lucide="chevron-down" class="chevron-icon"></i>
+          </button>
+          <div id="themeDropdown" class="theme-dropdown hidden">
+            <div class="theme-dropdown-header">Light Gradient Themes</div>
+            <button type="button" class="theme-opt-btn active" data-theme-val="aurora">
+              <span class="theme-preview-circle theme-aurora"></span>
+              <div class="theme-opt-text">
+                <span class="theme-opt-title">Aurora Pastel</span>
+                <span class="theme-opt-desc">Lavender, Sky & Blush</span>
+              </div>
+            </button>
+            <button type="button" class="theme-opt-btn" data-theme-val="sunset">
+              <span class="theme-preview-circle theme-sunset"></span>
+              <div class="theme-opt-text">
+                <span class="theme-opt-title">Sunset Glow</span>
+                <span class="theme-opt-desc">Peach, Coral & Apricot</span>
+              </div>
+            </button>
+            <button type="button" class="theme-opt-btn" data-theme-val="ocean">
+              <span class="theme-preview-circle theme-ocean"></span>
+              <div class="theme-opt-text">
+                <span class="theme-opt-title">Ocean Breeze</span>
+                <span class="theme-opt-desc">Crystalline Aqua & Mint</span>
+              </div>
+            </button>
+            <button type="button" class="theme-opt-btn" data-theme-val="lilac">
+              <span class="theme-preview-circle theme-lilac"></span>
+              <div class="theme-opt-text">
+                <span class="theme-opt-title">Lilac Dream</span>
+                <span class="theme-opt-desc">Orchid & Velvet Violet</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- User Status Badge -->
         <div id="currentUserBadge" class="user-badge-container hidden">
           <div class="user-avatar" id="avatarInitial">U</div>
