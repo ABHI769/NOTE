@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.0">
 </head>
 <body>
   <!-- Ambient background glow elements -->
@@ -249,6 +249,18 @@
 
               <div class="toolbar-divider"></div>
 
+              <!-- Reorder Block in Draft (Move Content Above or Below) -->
+              <div class="toolbar-group">
+                <button type="button" id="moveBlockUpBtn" class="tool-btn" title="Move Current Line/Block Above (Alt+Up)">
+                  <i data-lucide="arrow-up-circle"></i>
+                </button>
+                <button type="button" id="moveBlockDownBtn" class="tool-btn" title="Move Current Line/Block Below (Alt+Down)">
+                  <i data-lucide="arrow-down-circle"></i>
+                </button>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
               <!-- Insert Link and Insert Image -->
               <div class="toolbar-group">
                 <button type="button" id="insertLinkBtn" class="tool-btn" title="Insert Hyperlink">
@@ -314,6 +326,10 @@
                   class="silver-input search-input" 
                   placeholder="Search your notes..."
                 >
+              </div>
+              <div class="archive-reorder-hint">
+                <i data-lucide="arrow-up-down"></i>
+                <span>Reorder notes anytime: use arrows or drag handle to move above or below</span>
               </div>
             </div>
 
@@ -656,6 +672,6 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2.0"></script>
 </body>
 </html>
