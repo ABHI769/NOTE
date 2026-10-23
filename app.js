@@ -599,8 +599,16 @@
     }
   });
 
-  // Event Delegation for Main Notepad Container (When Admin is logged in, they can delete from here too!)
+  // Event Delegation for Main Notepad Container (Note Reordering & Admin Deletion)
   notesContainer.addEventListener('click', (e) => {
+    const moveBtn = e.target.closest('.btn-note-move');
+    if (moveBtn && !moveBtn.disabled) {
+      const noteId = moveBtn.dataset.id;
+      const direction = moveBtn.dataset.move;
+      moveNote(noteId, direction);
+      return;
+    }
+
     const mainViewDelBtn = e.target.closest('.main-view-admin-delete-btn');
     if (mainViewDelBtn) {
       const noteId = mainViewDelBtn.dataset.id;
@@ -776,6 +784,70 @@
   document.getElementById('clearFormatBtn').addEventListener('click', () => {
     document.execCommand('removeFormat', false, null);
     noteRichEditor.focus();
+  });
+
+  // Reorder Content Blocks Inside Note Editor (Move Above or Below)
+  function getSelectedBlockElement() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    let node = sel.anchorNode;
+    if (!node) return null;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentNode;
+    }
+    while (node && node.parentNode && node.parentNode !== noteRichEditor && node !== noteRichEditor) {
+      node = node.parentNode;
+    }
+    return (node && node.parentNode === noteRichEditor) ? node : null;
+  }
+
+  function moveEditorBlock(direction) {
+    let block = getSelectedBlockElement();
+    if (!block) {
+      const firstChild = noteRichEditor.firstElementChild;
+      if (!firstChild) {
+        showToast('Type some text or insert an image first to move it.', 'info');
+        return;
+      }
+      block = firstChild;
+    }
+
+    if (direction === 'up') {
+      const prev = block.previousElementSibling;
+      if (prev) {
+        noteRichEditor.insertBefore(block, prev);
+        block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        showToast('Content moved above.', 'info');
+      } else {
+        showToast('Already at the top of the note.', 'info');
+      }
+    } else if (direction === 'down') {
+      const next = block.nextElementSibling;
+      if (next) {
+        noteRichEditor.insertBefore(next, block);
+        block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        showToast('Content moved below.', 'info');
+      } else {
+        showToast('Already at the bottom of the note.', 'info');
+      }
+    }
+    updateEditorStats();
+  }
+
+  const moveBlockUpBtn = document.getElementById('moveBlockUpBtn');
+  const moveBlockDownBtn = document.getElementById('moveBlockDownBtn');
+  if (moveBlockUpBtn) moveBlockUpBtn.addEventListener('click', () => moveEditorBlock('up'));
+  if (moveBlockDownBtn) moveBlockDownBtn.addEventListener('click', () => moveEditorBlock('down'));
+
+  // Keyboard shortcut: Alt+Up and Alt+Down to move blocks
+  noteRichEditor.addEventListener('keydown', (e) => {
+    if (e.altKey && e.key === 'ArrowUp') {
+      e.preventDefault();
+      moveEditorBlock('up');
+    } else if (e.altKey && e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveEditorBlock('down');
+    }
   });
 
   // Live Stats Counter (Words & Characters)
@@ -1017,10 +1089,56 @@
   });
 
   /* ==========================================================================
-     USER NOTES ARCHIVE (READ-ONLY FOR REGULAR USERS, ADMIN HAS DELETE POWER)
+     USER NOTES ARCHIVE (REORDERABLE, IMMUTABLE CONTENT, ADMIN MODERATION)
      ========================================================================== */
 
   noteSearchInput.addEventListener('input', renderUserNotes);
+
+  // Move note directly above or below
+  function moveNote(noteId, direction) {
+    const allNotes = getStoredNotes();
+    const userNotes = allNotes.filter(n => n.username === state.currentUser);
+    const userIdx = userNotes.findIndex(n => n.id === noteId);
+    if (userIdx === -1) return;
+
+    const targetUserIdx = direction === 'up' ? userIdx - 1 : userIdx + 1;
+    if (targetUserIdx < 0 || targetUserIdx >= userNotes.length) return;
+
+    const currentNote = userNotes[userIdx];
+    const targetNote = userNotes[targetUserIdx];
+
+    const allCurrentIdx = allNotes.findIndex(n => n.id === currentNote.id);
+    const allTargetIdx = allNotes.findIndex(n => n.id === targetNote.id);
+
+    if (allCurrentIdx !== -1 && allTargetIdx !== -1) {
+      allNotes[allCurrentIdx] = targetNote;
+      allNotes[allTargetIdx] = currentNote;
+      saveStoredNotes(allNotes);
+      renderUserNotes();
+      showToast(direction === 'up' ? 'Note moved above.' : 'Note moved below.', 'success');
+    }
+  }
+
+  // Reorder note by drag & drop
+  function reorderNote(draggedId, targetId, insertBefore) {
+    if (!draggedId || !targetId || draggedId === targetId) return;
+    const allNotes = getStoredNotes();
+    const draggedIdx = allNotes.findIndex(n => n.id === draggedId);
+    if (draggedIdx === -1) return;
+
+    const [draggedNote] = allNotes.splice(draggedIdx, 1);
+    const targetIdx = allNotes.findIndex(n => n.id === targetId);
+    if (targetIdx === -1) {
+      allNotes.push(draggedNote);
+    } else {
+      const insertIdx = insertBefore ? targetIdx : targetIdx + 1;
+      allNotes.splice(insertIdx, 0, draggedNote);
+    }
+
+    saveStoredNotes(allNotes);
+    renderUserNotes();
+    showToast('Note repositioned successfully.', 'success');
+  }
 
   function renderUserNotes() {
     if (!state.currentUser) return;
@@ -1050,9 +1168,14 @@
       return;
     }
 
-    filtered.forEach(note => {
+    filtered.forEach((note, index) => {
       const card = document.createElement('article');
       card.className = 'note-card';
+      card.setAttribute('data-id', note.id);
+      card.setAttribute('draggable', 'true');
+
+      const isFirst = index === 0;
+      const isLast = index === filtered.length - 1;
 
       const dateStr = new Date(note.createdAt).toLocaleString(undefined, {
         month: 'short',
@@ -1066,8 +1189,23 @@
 
       card.innerHTML = `
         <header class="note-card-header">
-          <h3 class="note-card-title">${escapeHtml(note.title)}</h3>
+          <div class="note-header-left">
+            <div class="note-drag-handle" title="Drag to move note above or below" aria-label="Drag handle">
+              <i data-lucide="grip-vertical"></i>
+            </div>
+            <span class="note-order-pill">#${index + 1}</span>
+            <h3 class="note-card-title">${escapeHtml(note.title)}</h3>
+          </div>
           <div class="note-card-meta">
+            <!-- Move Note Above or Below Controls -->
+            <div class="note-reorder-controls" role="group" aria-label="Move note">
+              <button type="button" class="btn-note-move" data-move="up" data-id="${note.id}" title="Move Note Above" ${isFirst ? 'disabled' : ''} aria-label="Move note above">
+                <i data-lucide="arrow-up"></i>
+              </button>
+              <button type="button" class="btn-note-move" data-move="down" data-id="${note.id}" title="Move Note Below" ${isLast ? 'disabled' : ''} aria-label="Move note below">
+                <i data-lucide="arrow-down"></i>
+              </button>
+            </div>
             ${state.isAdmin ? `
               <button type="button" class="btn-silver-outline btn-sm main-view-admin-delete-btn" data-id="${note.id}" data-title="${escapeHtml(note.title)}" style="color: #991b1b; border-color: #fca5a5;">
                 <i data-lucide="trash-2"></i>
@@ -1100,6 +1238,112 @@
 
     if (window.lucide) lucide.createIcons();
   }
+
+  /* HTML5 & Touch Drag-and-Drop Reordering */
+  let draggedCardId = null;
+
+  notesContainer.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('.note-card');
+    if (!card) return;
+    draggedCardId = card.dataset.id;
+    card.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedCardId);
+    }
+  });
+
+  notesContainer.addEventListener('dragend', (e) => {
+    const card = e.target.closest('.note-card');
+    if (card) card.classList.remove('dragging');
+    document.querySelectorAll('.note-card').forEach(c => {
+      c.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    draggedCardId = null;
+  });
+
+  notesContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const targetCard = e.target.closest('.note-card');
+    if (!targetCard || targetCard.dataset.id === draggedCardId) return;
+
+    const rect = targetCard.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const isAbove = e.clientY < midpoint;
+
+    targetCard.classList.toggle('drag-over-top', isAbove);
+    targetCard.classList.toggle('drag-over-bottom', !isAbove);
+  });
+
+  notesContainer.addEventListener('dragleave', (e) => {
+    const targetCard = e.target.closest('.note-card');
+    if (targetCard) {
+      targetCard.classList.remove('drag-over-top', 'drag-over-bottom');
+    }
+  });
+
+  notesContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const targetCard = e.target.closest('.note-card');
+    if (!targetCard || !draggedCardId || targetCard.dataset.id === draggedCardId) return;
+
+    const rect = targetCard.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const insertBefore = e.clientY < midpoint;
+
+    targetCard.classList.remove('drag-over-top', 'drag-over-bottom');
+    reorderNote(draggedCardId, targetCard.dataset.id, insertBefore);
+  });
+
+  // Mobile Touch Drag-and-Drop Support
+  let touchDraggedCard = null;
+  let touchTargetCard = null;
+  let touchInsertBefore = true;
+
+  notesContainer.addEventListener('touchstart', (e) => {
+    const handle = e.target.closest('.note-drag-handle');
+    if (!handle) return;
+    const card = handle.closest('.note-card');
+    if (!card) return;
+
+    touchDraggedCard = card;
+    card.classList.add('dragging');
+  }, { passive: true });
+
+  notesContainer.addEventListener('touchmove', (e) => {
+    if (!touchDraggedCard) return;
+    const touch = e.touches[0];
+    const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cardBelow = elemBelow ? elemBelow.closest('.note-card') : null;
+
+    document.querySelectorAll('.note-card').forEach(c => {
+      if (c !== touchDraggedCard) c.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+
+    if (cardBelow && cardBelow !== touchDraggedCard) {
+      touchTargetCard = cardBelow;
+      const rect = cardBelow.getBoundingClientRect();
+      touchInsertBefore = touch.clientY < (rect.top + rect.height / 2);
+      cardBelow.classList.toggle('drag-over-top', touchInsertBefore);
+      cardBelow.classList.toggle('drag-over-bottom', !touchInsertBefore);
+    } else {
+      touchTargetCard = null;
+    }
+  }, { passive: true });
+
+  notesContainer.addEventListener('touchend', () => {
+    if (touchDraggedCard) {
+      touchDraggedCard.classList.remove('dragging');
+      if (touchTargetCard && touchDraggedCard.dataset.id !== touchTargetCard.dataset.id) {
+        reorderNote(touchDraggedCard.dataset.id, touchTargetCard.dataset.id, touchInsertBefore);
+      }
+      document.querySelectorAll('.note-card').forEach(c => {
+        c.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      touchDraggedCard = null;
+      touchTargetCard = null;
+    }
+  });
 
   /* ==========================================================================
      MODAL CONTROLLERS
