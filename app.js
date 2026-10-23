@@ -1,14 +1,11 @@
 /**
- * SILVERNOTE — Core Application Logic
- * Implements persistent immutable notepad, unique username registry (no password needed),
- * rich text editor, verification gates, and full administrative moderation controls.
+ * SILVERNOTE — Simple & Beautiful Notepad
+ * Clean personal notes application with rich-text editor, block reordering,
+ * note reordering (arrows + drag-and-drop), editing, deleting, and light gradient themes.
  */
 
 (function () {
   'use strict';
-
-  // Master Admin Credentials
-  const ADMIN_PASSWORD = 'admin123';
 
   // LocalStorage Keys
   const STORAGE_KEYS = {
@@ -20,12 +17,8 @@
 
   // Application State
   let state = {
-    currentUser: null,       // Active logged-in username
-    isAdmin: false,          // Elevated Admin privileges
-    activeFilterUser: 'ALL', // In Admin mode
-    activeEditingNoteId: null,
-    pendingImageBase64: null,
-    pendingAdminDelete: null // Stores { type: 'NOTE'|'CLEAR_USER'|'DELETE_USER', id, targetUser, title }
+    currentUser: null,
+    pendingImageBase64: null
   };
 
   /* ==========================================================================
@@ -101,11 +94,11 @@
         {
           id: 'note_' + Date.now(),
           username: 'DemoUser',
-          title: 'Welcome to SilverNote Protocol',
-          content: '<p>Welcome to <strong>SilverNote</strong>! This system utilizes an <em>append-only immutable archive</em>.</p><p>Key principles of this notepad:</p><ul><li>Once you commit a note, regular users <strong>cannot edit or delete</strong> it.</li><li>Only the system <strong>Administrator</strong> (Password: <code>admin123</code>) holds clearance to modify or erase entries.</li><li>Use the rich-text toolbar to customize fonts, insert images, and add hyperlinks.</li></ul>',
+          title: 'Welcome to SilverNote',
+          content: '<p>Welcome to <strong>SilverNote</strong>! A clean, simple, and distraction-free notepad.</p><p>Key features:</p><ul><li>Write, format text, customize fonts, insert images, and add hyperlinks.</li><li><strong>Reorder your notes</strong> anytime using the arrow buttons or drag handle.</li><li><strong>Edit or delete</strong> any note whenever you want using the Edit and Delete buttons.</li><li>Choose from 4 beautiful light gradient color themes in the top-left menu.</li></ul>',
           fontFamily: "'Inter', sans-serif",
           fontSize: '16px',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
+          createdAt: new Date().toISOString(),
           updatedAt: null
         }
       ];
@@ -126,8 +119,6 @@
   const avatarInitial = document.getElementById('avatarInitial');
   const displayUsername = document.getElementById('displayUsername');
   const logoutBtn = document.getElementById('logoutBtn');
-  const openAdminModalBtn = document.getElementById('openAdminModalBtn');
-  const adminBtnText = document.getElementById('adminBtnText');
 
   // Auth Form Elements
   const userLoginForm = document.getElementById('userLoginForm');
@@ -135,7 +126,6 @@
   const authStatusMessage = document.getElementById('authStatusMessage');
 
   // Notepad View Elements
-  const bannerUsername = document.getElementById('bannerUsername');
   const noteTitleInput = document.getElementById('noteTitleInput');
   const noteRichEditor = document.getElementById('noteRichEditor');
   const fontSelect = document.getElementById('fontSelect');
@@ -147,11 +137,6 @@
   const noteSearchInput = document.getElementById('noteSearchInput');
   const notesContainer = document.getElementById('notesContainer');
   const notesCountBadge = document.getElementById('notesCountBadge');
-
-  // Verification Modal Elements
-  const verificationModal = document.getElementById('verificationModal');
-  const verifyNoteTitle = document.getElementById('verifyNoteTitle');
-  const confirmCommitNoteBtn = document.getElementById('confirmCommitNoteBtn');
 
   // Link Modal Elements
   const linkModal = document.getElementById('linkModal');
@@ -175,41 +160,18 @@
   const imageUrlInput = document.getElementById('imageUrlInput');
   const confirmInsertImageBtn = document.getElementById('confirmInsertImageBtn');
 
-  // Admin Login Modal Elements
-  const adminLoginModal = document.getElementById('adminLoginModal');
-  const adminLoginForm = document.getElementById('adminLoginForm');
-  const adminPasswordInput = document.getElementById('adminPasswordInput');
-  const adminLoginError = document.getElementById('adminLoginError');
-  const submitAdminLoginBtn = document.getElementById('submitAdminLoginBtn');
+  // Edit Note Modal Elements
+  const editNoteModal = document.getElementById('editNoteModal');
+  const editNoteId = document.getElementById('editNoteId');
+  const editNoteTitleInput = document.getElementById('editNoteTitleInput');
+  const editNoteContentCanvas = document.getElementById('editNoteContentCanvas');
+  const saveEditNoteBtn = document.getElementById('saveEditNoteBtn');
 
-  // Admin Dashboard Modal Elements
-  const adminDashboardModal = document.getElementById('adminDashboardModal');
-  const adminExitBtn = document.getElementById('adminExitBtn');
-  const refreshAdminDataBtn = document.getElementById('refreshAdminDataBtn');
-  const statTotalUsers = document.getElementById('statTotalUsers');
-  const statTotalNotes = document.getElementById('statTotalNotes');
-  const adminTabUsers = document.getElementById('adminTabUsers');
-  const adminTabNotes = document.getElementById('adminTabNotes');
-  const adminPanelUsers = document.getElementById('adminPanelUsers');
-  const adminPanelNotes = document.getElementById('adminPanelNotes');
-  const adminUsersTableBody = document.getElementById('adminUsersTableBody');
-  const adminUserFilter = document.getElementById('adminUserFilter');
-  const adminNotesFeed = document.getElementById('adminNotesFeed');
-
-  // Admin Edit Modal Elements
-  const adminEditModal = document.getElementById('adminEditModal');
-  const adminEditAuthor = document.getElementById('adminEditAuthor');
-  const adminEditNoteId = document.getElementById('adminEditNoteId');
-  const adminEditTitleInput = document.getElementById('adminEditTitleInput');
-  const adminEditContentCanvas = document.getElementById('adminEditContentCanvas');
-  const saveAdminEditBtn = document.getElementById('saveAdminEditBtn');
-
-  // Admin Confirmation Delete Modal
-  const adminConfirmDeleteModal = document.getElementById('adminConfirmDeleteModal');
-  const adminDeleteModalHeading = document.getElementById('adminDeleteModalHeading');
-  const adminDeleteModalMessage = document.getElementById('adminDeleteModalMessage');
-  const adminDeleteTargetPreview = document.getElementById('adminDeleteTargetPreview');
-  const adminConfirmDeleteExecuteBtn = document.getElementById('adminConfirmDeleteExecuteBtn');
+  // Confirm Delete Modal Elements
+  const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+  const deleteTargetPreview = document.getElementById('deleteTargetPreview');
+  const confirmDeleteExecuteBtn = document.getElementById('confirmDeleteExecuteBtn');
+  let pendingDeleteNoteId = null;
 
   // Toast Container
   const toastContainer = document.getElementById('toastContainer');
@@ -238,7 +200,7 @@
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.3s ease';
       setTimeout(() => toast.remove(), 300);
-    }, 3500);
+    }, 3200);
   }
 
   function escapeHtml(str) {
@@ -251,13 +213,9 @@
   }
 
   /* ==========================================================================
-     USER AUTHENTICATION LOGIC (NO PASSWORD REQUIRED)
-     - User adds username.
-     - "No one else should be able to use that username if someone of that name exists"
-     - "Only Admin has the access to remove a username if it is made"
+     USER AUTHENTICATION (NO PASSWORD REQUIRED)
      ========================================================================== */
 
-  // Check username availability as user types
   usernameInput.addEventListener('input', () => {
     const rawVal = usernameInput.value.trim();
     if (!rawVal) {
@@ -266,26 +224,17 @@
     }
 
     const users = getStoredUsers();
-    const currentDeviceUser = localStorage.getItem(STORAGE_KEYS.DEVICE_USER);
-
     if (users[rawVal]) {
-      if (currentDeviceUser === rawVal) {
-        authStatusMessage.textContent = `Welcome back! You are the registered owner of "${rawVal}". Click continue to enter.`;
-        authStatusMessage.className = 'auth-feedback success';
-        authStatusMessage.classList.remove('hidden');
-      } else {
-        authStatusMessage.textContent = `⚠️ Username "${rawVal}" is already registered! No one else is permitted to use this name.`;
-        authStatusMessage.className = 'auth-feedback error';
-        authStatusMessage.classList.remove('hidden');
-      }
+      authStatusMessage.textContent = `Welcome back, ${rawVal}! Click to open your notes.`;
+      authStatusMessage.className = 'auth-feedback success';
+      authStatusMessage.classList.remove('hidden');
     } else {
-      authStatusMessage.textContent = `Username "${rawVal}" is available. Click continue to claim this username.`;
+      authStatusMessage.textContent = `New user "${rawVal}". Click to create your workspace.`;
       authStatusMessage.className = 'auth-feedback success';
       authStatusMessage.classList.remove('hidden');
     }
   });
 
-  // Handle User Entry
   userLoginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const rawUser = usernameInput.value.trim();
@@ -296,460 +245,25 @@
     }
 
     const users = getStoredUsers();
-    const currentDeviceUser = localStorage.getItem(STORAGE_KEYS.DEVICE_USER);
-
-    if (users[rawUser]) {
-      // Username already exists: Check if this device owns it
-      if (currentDeviceUser === rawUser) {
-        // Legitimate owner returning
-        state.currentUser = rawUser;
-        saveStoredSession({ username: rawUser, isAdmin: state.isAdmin });
-        showToast(`Welcome back, ${rawUser}!`, 'success');
-        renderAppView();
-      } else {
-        // Someone else is trying to use an existing username
-        showToast(`Username "${rawUser}" is already taken! No one else can use that username. Only the Admin can delete it.`, 'error');
-        authStatusMessage.textContent = `❌ Username "${rawUser}" is already in use by another person. Choose a different name.`;
-        authStatusMessage.className = 'auth-feedback error';
-        authStatusMessage.classList.remove('hidden');
-      }
-    } else {
-      // New Username Registration (No password needed!)
+    if (!users[rawUser]) {
       users[rawUser] = {
         username: rawUser,
         createdAt: new Date().toISOString()
       };
       saveStoredUsers(users);
-      localStorage.setItem(STORAGE_KEYS.DEVICE_USER, rawUser);
-
-      state.currentUser = rawUser;
-      saveStoredSession({ username: rawUser, isAdmin: state.isAdmin });
-      showToast(`Username "${rawUser}" successfully claimed and registered!`, 'success');
-      renderAppView();
     }
+
+    state.currentUser = rawUser;
+    saveStoredSession({ username: rawUser });
+    showToast(`Welcome, ${rawUser}!`, 'success');
+    renderAppView();
   });
 
-  // Logout Handler
   logoutBtn.addEventListener('click', () => {
     state.currentUser = null;
-    saveStoredSession({ username: null, isAdmin: state.isAdmin });
+    saveStoredSession(null);
     renderAppView();
-    showToast('Logged out. Your notes remain safely stored.', 'info');
-  });
-
-  /* ==========================================================================
-     ADMIN AUTHENTICATION & PORTAL LOGIC
-     ========================================================================== */
-
-  openAdminModalBtn.addEventListener('click', () => {
-    if (state.isAdmin) {
-      openAdminDashboard();
-    } else {
-      adminPasswordInput.value = '';
-      adminLoginError.classList.add('hidden');
-      openModal(adminLoginModal);
-      adminPasswordInput.focus();
-    }
-  });
-
-  adminLoginForm.addEventListener('submit', handleAdminLoginSubmit);
-  submitAdminLoginBtn.addEventListener('click', handleAdminLoginSubmit);
-
-  function handleAdminLoginSubmit(e) {
-    if (e) e.preventDefault();
-    const enteredPassword = adminPasswordInput.value.trim();
-
-    if (enteredPassword === ADMIN_PASSWORD) {
-      state.isAdmin = true;
-      saveStoredSession({ username: state.currentUser, isAdmin: true });
-      closeModal(adminLoginModal);
-      showToast('Admin clearance verified.', 'success');
-      updateAdminButtonBadge();
-      renderAppView(); // Refresh main view to show Admin Delete buttons if on notes view
-      openAdminDashboard();
-    } else {
-      adminLoginError.classList.remove('hidden');
-      adminPasswordInput.focus();
-      showToast('Incorrect Admin password.', 'error');
-    }
-  }
-
-  adminExitBtn.addEventListener('click', () => {
-    state.isAdmin = false;
-    saveStoredSession({ username: state.currentUser, isAdmin: false });
-    closeModal(adminDashboardModal);
-    updateAdminButtonBadge();
-    renderAppView();
-    showToast('Exited Admin Mode.', 'info');
-  });
-
-  function updateAdminButtonBadge() {
-    if (state.isAdmin) {
-      adminBtnText.textContent = 'Admin Control Panel 🛡️';
-      openAdminModalBtn.classList.add('warning-btn');
-    } else {
-      adminBtnText.textContent = 'Admin Portal';
-      openAdminModalBtn.classList.remove('warning-btn');
-    }
-  }
-
-  function openAdminDashboard() {
-    renderAdminStats();
-    renderAdminUsersTable();
-    populateAdminUserFilter();
-    renderAdminNotesFeed();
-    openModal(adminDashboardModal);
-  }
-
-  refreshAdminDataBtn.addEventListener('click', () => {
-    renderAdminStats();
-    renderAdminUsersTable();
-    populateAdminUserFilter();
-    renderAdminNotesFeed();
-    showToast('Admin data refreshed.', 'info');
-  });
-
-  // Admin Tab Navigation
-  adminTabUsers.addEventListener('click', () => {
-    adminTabUsers.classList.add('active');
-    adminTabNotes.classList.remove('active');
-    adminPanelUsers.classList.remove('hidden');
-    adminPanelNotes.classList.add('hidden');
-  });
-
-  adminTabNotes.addEventListener('click', () => {
-    adminTabNotes.classList.add('active');
-    adminTabUsers.classList.remove('active');
-    adminPanelNotes.classList.remove('hidden');
-    adminPanelUsers.classList.add('hidden');
-    renderAdminNotesFeed();
-  });
-
-  function renderAdminStats() {
-    const users = getStoredUsers();
-    const notes = getStoredNotes();
-    statTotalUsers.textContent = Object.keys(users).length;
-    statTotalNotes.textContent = notes.length;
-  }
-
-  /* ==========================================================================
-     ADMIN USERS TABLE (CLEAR NOTES & DELETE USERNAME)
-     ========================================================================== */
-
-  function renderAdminUsersTable() {
-    const users = getStoredUsers();
-    const notes = getStoredNotes();
-    const userList = Object.values(users);
-
-    adminUsersTableBody.innerHTML = '';
-
-    if (userList.length === 0) {
-      adminUsersTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--silver-600); padding: 2rem;">No registered users found.</td></tr>`;
-      return;
-    }
-
-    userList.forEach(u => {
-      const userNotes = notes.filter(n => n.username === u.username);
-      const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="table-username">
-            <span class="table-user-dot"></span>
-            <strong>${escapeHtml(u.username)}</strong>
-          </div>
-        </td>
-        <td>${joinedDate}</td>
-        <td><strong>${userNotes.length}</strong> note${userNotes.length === 1 ? '' : 's'}</td>
-        <td>
-          <button type="button" class="btn-silver-outline btn-sm admin-clear-notes-btn" data-username="${escapeHtml(u.username)}" ${userNotes.length === 0 ? 'disabled' : ''}>
-            <i data-lucide="trash"></i>
-            <span>Clear All Notes (${userNotes.length})</span>
-          </button>
-        </td>
-        <td>
-          <button type="button" class="btn-silver-solid btn-sm admin-delete-user-btn" data-username="${escapeHtml(u.username)}" style="background: #fee2e2; border-color: #fca5a5; color: #991b1b;">
-            <i data-lucide="user-x"></i>
-            <span>Delete Username & All Data</span>
-          </button>
-        </td>
-      `;
-      adminUsersTableBody.appendChild(tr);
-    });
-
-    if (window.lucide) lucide.createIcons();
-  }
-
-  // Event Delegation for Admin Users Table actions (Reliable click handling)
-  adminUsersTableBody.addEventListener('click', (e) => {
-    const clearNotesBtn = e.target.closest('.admin-clear-notes-btn');
-    if (clearNotesBtn && !clearNotesBtn.disabled) {
-      const targetUser = clearNotesBtn.dataset.username;
-      openDeleteConfirmation('CLEAR_USER', null, targetUser, `All notes belonging to "${targetUser}"`);
-      return;
-    }
-
-    const deleteUserBtn = e.target.closest('.admin-delete-user-btn');
-    if (deleteUserBtn) {
-      const targetUser = deleteUserBtn.dataset.username;
-      openDeleteConfirmation('DELETE_USER', null, targetUser, `User "${targetUser}" and ALL of their archived notes`);
-      return;
-    }
-  });
-
-  /* ==========================================================================
-     ADMIN MASTER NOTES FEED & MODERATION
-     ========================================================================== */
-
-  function populateAdminUserFilter() {
-    const users = getStoredUsers();
-    const selected = adminUserFilter.value;
-    adminUserFilter.innerHTML = '<option value="ALL">All Users</option>';
-    Object.keys(users).forEach(u => {
-      const opt = document.createElement('option');
-      opt.value = u;
-      opt.textContent = u;
-      if (u === selected) opt.selected = true;
-      adminUserFilter.appendChild(opt);
-    });
-  }
-
-  adminUserFilter.addEventListener('change', () => {
-    state.activeFilterUser = adminUserFilter.value;
-    renderAdminNotesFeed();
-  });
-
-  function renderAdminNotesFeed() {
-    const notes = getStoredNotes();
-    const filter = state.activeFilterUser || 'ALL';
-
-    const filtered = filter === 'ALL' ? notes : notes.filter(n => n.username === filter);
-
-    adminNotesFeed.innerHTML = '';
-
-    if (filtered.length === 0) {
-      adminNotesFeed.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
-          <i data-lucide="folder-open" class="empty-state-icon"></i>
-          <h3>No Notes Found</h3>
-          <p>No notes exist under filter "${filter}".</p>
-        </div>
-      `;
-      if (window.lucide) lucide.createIcons();
-      return;
-    }
-
-    filtered.forEach(note => {
-      const card = document.createElement('div');
-      card.className = 'admin-note-card';
-      const createdDate = new Date(note.createdAt).toLocaleString();
-      const updatedDate = note.updatedAt ? ` • Modified: ${new Date(note.updatedAt).toLocaleTimeString()}` : '';
-
-      card.innerHTML = `
-        <div>
-          <div class="admin-note-header">
-            <div>
-              <span class="admin-note-author">Author: ${escapeHtml(note.username)}</span>
-              <h4 style="font-size: 1.1rem; font-weight: 700; margin-top: 0.2rem;">${escapeHtml(note.title || 'Untitled Note')}</h4>
-            </div>
-            <span class="lock-badge"><i data-lucide="shield"></i> Managed</span>
-          </div>
-          <div class="admin-note-body" style="font-family: ${note.fontFamily || 'inherit'}; font-size: ${note.fontSize || '15px'};">
-            ${note.content || '<em>(Empty Content)</em>'}
-          </div>
-        </div>
-        <div>
-          <div style="font-size: 0.72rem; color: var(--silver-600); margin-bottom: 0.5rem;">
-            Added: ${createdDate}${updatedDate}
-          </div>
-          <div class="admin-card-actions">
-            <button type="button" class="btn-silver-solid btn-sm admin-edit-note-btn" data-id="${note.id}">
-              <i data-lucide="edit-3"></i>
-              <span>Admin Edit</span>
-            </button>
-            <button type="button" class="btn-silver-outline btn-sm admin-delete-single-note-btn" data-id="${note.id}" data-title="${escapeHtml(note.title || 'Untitled Note')}" style="color: #991b1b; border-color: #fca5a5;">
-              <i data-lucide="trash-2"></i>
-              <span>Delete Note</span>
-            </button>
-          </div>
-        </div>
-      `;
-      adminNotesFeed.appendChild(card);
-    });
-
-    if (window.lucide) lucide.createIcons();
-  }
-
-  // Event Delegation for Admin Notes Feed (Captures Delete & Edit clicks 100% reliably)
-  adminNotesFeed.addEventListener('click', (e) => {
-    const deleteBtn = e.target.closest('.admin-delete-single-note-btn');
-    if (deleteBtn) {
-      const noteId = deleteBtn.dataset.id;
-      const noteTitle = deleteBtn.dataset.title;
-      openDeleteConfirmation('NOTE', noteId, null, noteTitle);
-      return;
-    }
-
-    const editBtn = e.target.closest('.admin-edit-note-btn');
-    if (editBtn) {
-      const noteId = editBtn.dataset.id;
-      openAdminEditModal(noteId);
-      return;
-    }
-  });
-
-  // Event Delegation for Main Notepad Container (Note Reordering & Admin Deletion)
-  notesContainer.addEventListener('click', (e) => {
-    const moveBtn = e.target.closest('.btn-note-move');
-    if (moveBtn && !moveBtn.disabled) {
-      const noteId = moveBtn.dataset.id;
-      const direction = moveBtn.dataset.move;
-      moveNote(noteId, direction);
-      return;
-    }
-
-    const mainViewDelBtn = e.target.closest('.main-view-admin-delete-btn');
-    if (mainViewDelBtn) {
-      const noteId = mainViewDelBtn.dataset.id;
-      const noteTitle = mainViewDelBtn.dataset.title;
-      openDeleteConfirmation('NOTE', noteId, null, noteTitle);
-    }
-  });
-
-  /* ==========================================================================
-     IN-APP CONFIRMATION MODAL LOGIC (NEVER FAILS / NO NATIVE CONFIRM BUG)
-     ========================================================================== */
-
-  function openDeleteConfirmation(type, noteId, targetUser, previewText) {
-    state.pendingAdminDelete = { type, noteId, targetUser };
-
-    if (type === 'NOTE') {
-      adminDeleteModalHeading.textContent = 'Confirm Note Deletion';
-      adminDeleteModalMessage.innerHTML = 'Are you sure you want to <strong>permanently delete</strong> this note? As Admin, this action cannot be undone.';
-      adminDeleteTargetPreview.innerHTML = `
-        <span class="summary-label">Target Note:</span>
-        <div class="summary-title">${escapeHtml(previewText || 'Untitled Note')}</div>
-      `;
-    } else if (type === 'CLEAR_USER') {
-      adminDeleteModalHeading.textContent = 'Clear All User Notes';
-      adminDeleteModalMessage.innerHTML = `Are you sure you want to <strong>delete all notes</strong> created by <strong>${escapeHtml(targetUser)}</strong>? The user account will remain.`;
-      adminDeleteTargetPreview.innerHTML = `
-        <span class="summary-label">Target User:</span>
-        <div class="summary-title">${escapeHtml(targetUser)}</div>
-      `;
-    } else if (type === 'DELETE_USER') {
-      adminDeleteModalHeading.textContent = 'Permanently Delete Username';
-      adminDeleteModalMessage.innerHTML = `<strong>HIGH-RISK ACTION:</strong> Are you sure you want to delete user <strong>"${escapeHtml(targetUser)}"</strong>? This will permanently erase the username AND all notes written under it!`;
-      adminDeleteTargetPreview.innerHTML = `
-        <span class="summary-label">Target Account & Notes:</span>
-        <div class="summary-title">${escapeHtml(targetUser)} (Full Wipe)</div>
-      `;
-    }
-
-    openModal(adminConfirmDeleteModal);
-  }
-
-  // Execute Confirmed Admin Delete Action
-  adminConfirmDeleteExecuteBtn.addEventListener('click', () => {
-    if (!state.pendingAdminDelete) return;
-
-    const { type, noteId, targetUser } = state.pendingAdminDelete;
-
-    if (type === 'NOTE') {
-      let notes = getStoredNotes();
-      const initialCount = notes.length;
-      notes = notes.filter(n => n.id !== noteId);
-      saveStoredNotes(notes);
-
-      showToast('Note permanently deleted by Administrator.', 'success');
-    } else if (type === 'CLEAR_USER') {
-      let notes = getStoredNotes();
-      notes = notes.filter(n => n.username !== targetUser);
-      saveStoredNotes(notes);
-
-      showToast(`All notes for user "${targetUser}" have been cleared.`, 'success');
-    } else if (type === 'DELETE_USER') {
-      // 1. Remove all notes for this user
-      let notes = getStoredNotes();
-      notes = notes.filter(n => n.username !== targetUser);
-      saveStoredNotes(notes);
-
-      // 2. Remove user from users registry
-      const users = getStoredUsers();
-      delete users[targetUser];
-      saveStoredUsers(users);
-
-      // 3. Clear device user if it was this user
-      if (localStorage.getItem(STORAGE_KEYS.DEVICE_USER) === targetUser) {
-        localStorage.removeItem(STORAGE_KEYS.DEVICE_USER);
-      }
-
-      showToast(`User "${targetUser}" and all notes deleted successfully.`, 'success');
-
-      // 4. If current logged in user was this deleted user, log out
-      if (state.currentUser === targetUser) {
-        state.currentUser = null;
-        saveStoredSession({ username: null, isAdmin: state.isAdmin });
-        renderAppView();
-      }
-    }
-
-    // Reset pending action and close modal
-    state.pendingAdminDelete = null;
-    closeModal(adminConfirmDeleteModal);
-
-    // Refresh all views
-    renderAdminStats();
-    renderAdminUsersTable();
-    populateAdminUserFilter();
-    renderAdminNotesFeed();
-
-    if (state.currentUser) {
-      renderUserNotes();
-    }
-  });
-
-  /* ==========================================================================
-     ADMIN EDIT NOTE MODAL
-     ========================================================================== */
-
-  function openAdminEditModal(noteId) {
-    const notes = getStoredNotes();
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-
-    state.activeEditingNoteId = noteId;
-    adminEditAuthor.textContent = note.username;
-    adminEditNoteId.textContent = note.id;
-    adminEditTitleInput.value = note.title || '';
-    adminEditContentCanvas.innerHTML = note.content || '';
-
-    openModal(adminEditModal);
-  }
-
-  saveAdminEditBtn.addEventListener('click', () => {
-    if (!state.activeEditingNoteId) return;
-
-    const notes = getStoredNotes();
-    const noteIndex = notes.findIndex(n => n.id === state.activeEditingNoteId);
-    if (noteIndex === -1) return;
-
-    const newTitle = adminEditTitleInput.value.trim() || 'Untitled Note';
-    const newContent = adminEditContentCanvas.innerHTML;
-
-    notes[noteIndex].title = newTitle;
-    notes[noteIndex].content = newContent;
-    notes[noteIndex].updatedAt = new Date().toISOString();
-
-    saveStoredNotes(notes);
-    closeModal(adminEditModal);
-    showToast('Note modified successfully by Admin.', 'success');
-
-    renderAdminNotesFeed();
-    if (state.currentUser) {
-      renderUserNotes();
-    }
+    showToast('Logged out. Your notes remain saved.', 'info');
   });
 
   /* ==========================================================================
@@ -952,7 +466,6 @@
     uploadImgPanel.classList.add('hidden');
   });
 
-  // Dropzone click & drag handlers
   dropzoneBox.addEventListener('click', () => imageFileInput.click());
 
   dropzoneBox.addEventListener('dragover', (e) => {
@@ -1033,13 +546,17 @@
   });
 
   /* ==========================================================================
-     USER NOTE CREATION & VERIFICATION GATEWAY
-     "WHEN USER WILL ADD DATA THEN WE WILL VERIFY WHETHER HE WANT TO ADD IT 
-      BECAUSE HE CANT DELETE IT AFTERWARDS HE NEED ADMIN TO DO IT."
+     DIRECT NOTE SAVING (SIMPLE & INSTANT)
      ========================================================================== */
 
   submitNoteBtn.addEventListener('click', () => {
-    const title = noteTitleInput.value.trim();
+    if (!state.currentUser) {
+      showToast('Session expired. Please enter your username again.', 'error');
+      return;
+    }
+
+    const title = noteTitleInput.value.trim() || 'Untitled Note';
+    const content = noteRichEditor.innerHTML;
     const textLength = noteRichEditor.innerText.trim().length;
 
     if (textLength === 0 && !noteRichEditor.querySelector('img')) {
@@ -1047,19 +564,6 @@
       return;
     }
 
-    verifyNoteTitle.textContent = title || 'Untitled Note';
-    openModal(verificationModal);
-  });
-
-  confirmCommitNoteBtn.addEventListener('click', () => {
-    if (!state.currentUser) {
-      showToast('Session expired. Please enter your username again.', 'error');
-      closeModal(verificationModal);
-      return;
-    }
-
-    const title = noteTitleInput.value.trim() || 'Untitled Note';
-    const content = noteRichEditor.innerHTML;
     const fontFamily = fontSelect.value;
     const fontSize = fontSizeSelect.value;
 
@@ -1083,13 +587,71 @@
     noteRichEditor.innerHTML = '';
     updateEditorStats();
 
-    closeModal(verificationModal);
-    showToast('Note permanently committed to your archive.', 'success');
+    showToast('Note saved successfully!', 'success');
     renderUserNotes();
   });
 
   /* ==========================================================================
-     USER NOTES ARCHIVE (REORDERABLE, IMMUTABLE CONTENT, ADMIN MODERATION)
+     NOTE EDITING & DELETING (USER EMPOWERED)
+     ========================================================================== */
+
+  function openEditNoteModal(noteId) {
+    const notes = getStoredNotes();
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    editNoteId.value = note.id;
+    editNoteTitleInput.value = note.title || '';
+    editNoteContentCanvas.innerHTML = note.content || '';
+    openModal(editNoteModal);
+    editNoteTitleInput.focus();
+  }
+
+  saveEditNoteBtn.addEventListener('click', () => {
+    const noteId = editNoteId.value;
+    if (!noteId) return;
+
+    const notes = getStoredNotes();
+    const idx = notes.findIndex(n => n.id === noteId);
+    if (idx === -1) return;
+
+    const newTitle = editNoteTitleInput.value.trim() || 'Untitled Note';
+    const newContent = editNoteContentCanvas.innerHTML;
+
+    notes[idx].title = newTitle;
+    notes[idx].content = newContent;
+    notes[idx].updatedAt = new Date().toISOString();
+
+    saveStoredNotes(notes);
+    closeModal(editNoteModal);
+    showToast('Note updated successfully!', 'success');
+    renderUserNotes();
+  });
+
+  function openDeleteNoteModal(noteId, title) {
+    pendingDeleteNoteId = noteId;
+    deleteTargetPreview.innerHTML = `
+      <span class="summary-label">Target Note:</span>
+      <div class="summary-title">${escapeHtml(title || 'Untitled Note')}</div>
+    `;
+    openModal(confirmDeleteModal);
+  }
+
+  confirmDeleteExecuteBtn.addEventListener('click', () => {
+    if (!pendingDeleteNoteId) return;
+
+    let notes = getStoredNotes();
+    notes = notes.filter(n => n.id !== pendingDeleteNoteId);
+    saveStoredNotes(notes);
+
+    pendingDeleteNoteId = null;
+    closeModal(confirmDeleteModal);
+    showToast('Note deleted successfully.', 'success');
+    renderUserNotes();
+  });
+
+  /* ==========================================================================
+     USER NOTES ARCHIVE (REORDERABLE, EDITABLE, DELETABLE)
      ========================================================================== */
 
   noteSearchInput.addEventListener('input', renderUserNotes);
@@ -1161,7 +723,7 @@
         <div class="empty-state">
           <i data-lucide="file-question" class="empty-state-icon"></i>
           <h3>${userNotes.length === 0 ? 'No Notes Recorded Yet' : 'No Matching Notes'}</h3>
-          <p>${userNotes.length === 0 ? 'Your archive is empty. Write your thoughts above and commit them.' : 'Try adjusting your search keywords.'}</p>
+          <p>${userNotes.length === 0 ? 'Your notepad is empty. Write your thoughts above and click Save Note.' : 'Try adjusting your search keywords.'}</p>
         </div>
       `;
       if (window.lucide) lucide.createIcons();
@@ -1185,7 +747,7 @@
         minute: '2-digit'
       });
 
-      const updatedStr = note.updatedAt ? ` • Edited by Admin: ${new Date(note.updatedAt).toLocaleDateString()}` : '';
+      const updatedStr = note.updatedAt ? ` • Edited: ${new Date(note.updatedAt).toLocaleDateString()}` : '';
 
       card.innerHTML = `
         <header class="note-card-header">
@@ -1206,17 +768,16 @@
                 <i data-lucide="arrow-down"></i>
               </button>
             </div>
-            ${state.isAdmin ? `
-              <button type="button" class="btn-silver-outline btn-sm main-view-admin-delete-btn" data-id="${note.id}" data-title="${escapeHtml(note.title)}" style="color: #991b1b; border-color: #fca5a5;">
-                <i data-lucide="trash-2"></i>
-                <span>Admin Delete</span>
-              </button>
-            ` : `
-              <span class="lock-badge" title="Users cannot modify or delete saved notes">
-                <i data-lucide="lock"></i>
-                <span>Locked</span>
-              </span>
-            `}
+            <!-- Edit Button -->
+            <button type="button" class="btn-silver-ghost btn-sm btn-edit-note" data-id="${note.id}" title="Edit this note">
+              <i data-lucide="edit-3"></i>
+              <span>Edit</span>
+            </button>
+            <!-- Delete Button -->
+            <button type="button" class="btn-silver-ghost btn-sm btn-delete-note" data-id="${note.id}" data-title="${escapeHtml(note.title)}" title="Delete this note" style="color: #dc2626;">
+              <i data-lucide="trash-2"></i>
+              <span>Delete</span>
+            </button>
           </div>
         </header>
 
@@ -1226,7 +787,7 @@
 
         <footer class="note-card-footer">
           <span class="note-owner">
-            <i data-lucide="user-check"></i>
+            <i data-lucide="user"></i>
             <span>${escapeHtml(note.username)}</span>
           </span>
           <span class="note-time">${dateStr}${updatedStr}</span>
@@ -1238,6 +799,35 @@
 
     if (window.lucide) lucide.createIcons();
   }
+
+  // Event Delegation for Notes Container (Move, Edit, Delete)
+  notesContainer.addEventListener('click', (e) => {
+    // Reorder move up / move down buttons
+    const moveBtn = e.target.closest('.btn-note-move');
+    if (moveBtn && !moveBtn.disabled) {
+      const noteId = moveBtn.dataset.id;
+      const direction = moveBtn.dataset.move;
+      moveNote(noteId, direction);
+      return;
+    }
+
+    // Edit button
+    const editBtn = e.target.closest('.btn-edit-note');
+    if (editBtn) {
+      const noteId = editBtn.dataset.id;
+      openEditNoteModal(noteId);
+      return;
+    }
+
+    // Delete button
+    const deleteBtn = e.target.closest('.btn-delete-note');
+    if (deleteBtn) {
+      const noteId = deleteBtn.dataset.id;
+      const noteTitle = deleteBtn.dataset.title;
+      openDeleteNoteModal(noteId, noteTitle);
+      return;
+    }
+  });
 
   /* HTML5 & Touch Drag-and-Drop Reordering */
   let draggedCardId = null;
@@ -1362,7 +952,6 @@
     document.body.style.overflow = '';
   }
 
-  // Handle all modal close buttons with data-close-modal attribute
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-close-modal');
@@ -1371,7 +960,6 @@
     });
   });
 
-  // Close modals when clicking backdrop
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
@@ -1380,7 +968,6 @@
     });
   });
 
-  // Escape key closes open modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(modal => {
@@ -1388,10 +975,6 @@
       });
     }
   });
-
-  /* ==========================================================================
-     APP VIEW ROUTING & INITIALIZATION
-     ========================================================================== */
 
   /* ==========================================================================
      LIGHT GRADIENT THEME CONTROLLER
@@ -1415,7 +998,6 @@
       activeThemeNameEl.textContent = THEME_NAMES[themeKey].split(' ')[0];
     }
 
-    // Update active class on dropdown buttons
     document.querySelectorAll('.theme-opt-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.themeVal === themeKey);
     });
@@ -1457,21 +1039,16 @@
   }
 
   function renderAppView() {
-    updateAdminButtonBadge();
-
     if (state.currentUser) {
-      // User is logged in
       authSection.classList.add('hidden');
       notepadSection.classList.remove('hidden');
 
       currentUserBadge.classList.remove('hidden');
       avatarInitial.textContent = state.currentUser.charAt(0).toUpperCase();
       displayUsername.textContent = state.currentUser;
-      bannerUsername.textContent = state.currentUser;
 
       renderUserNotes();
     } else {
-      // No active user login
       authSection.classList.remove('hidden');
       notepadSection.classList.add('hidden');
       currentUserBadge.classList.add('hidden');
@@ -1487,15 +1064,10 @@
     initializeSampleDataIfEmpty();
 
     const storedSession = getStoredSession();
-    if (storedSession) {
-      if (storedSession.username) {
-        const users = getStoredUsers();
-        if (users[storedSession.username]) {
-          state.currentUser = storedSession.username;
-        }
-      }
-      if (storedSession.isAdmin) {
-        state.isAdmin = true;
+    if (storedSession && storedSession.username) {
+      const users = getStoredUsers();
+      if (users[storedSession.username]) {
+        state.currentUser = storedSession.username;
       }
     }
 
@@ -1503,7 +1075,6 @@
     updateEditorStats();
   }
 
-  // Run on load
   document.addEventListener('DOMContentLoaded', initApp);
 
 })();
