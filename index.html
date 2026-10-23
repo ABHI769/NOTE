@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SilverNote — Secure Immutable Notepad & Archive</title>
-  <meta name="description" content="A premium silver-white notepad where user notes are permanent upon creation. Admin-controlled deletion and modifications.">
+  <title>SilverNote — Simple & Beautiful Notepad</title>
+  <meta name="description" content="A simple, fast, and beautiful notepad to write, format, edit, and organize notes.">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css?v=2.0">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
   <!-- Ambient background glow elements -->
@@ -30,7 +30,7 @@
         </div>
         <div class="brand-text">
           <span class="brand-title">SILVER<span class="brand-title-accent">NOTE</span></span>
-          <span class="brand-subtitle">Permanent Notepad System</span>
+          <span class="brand-subtitle">Personal Notepad</span>
         </div>
       </div>
 
@@ -86,12 +86,6 @@
             <i data-lucide="log-out"></i>
           </button>
         </div>
-
-        <!-- Admin Portal Trigger Button -->
-        <button id="openAdminModalBtn" class="btn-silver-outline admin-portal-btn">
-          <i data-lucide="shield-check"></i>
-          <span id="adminBtnText">Admin Portal</span>
-        </button>
       </div>
     </div>
   </header>
@@ -104,18 +98,18 @@
       <div class="auth-card">
         <div class="auth-card-sheen"></div>
         <div class="auth-icon-wrap">
-          <i data-lucide="shield-alert"></i>
+          <i data-lucide="notebook-pen"></i>
         </div>
         <h1 class="auth-title">Welcome to SilverNote</h1>
         <p class="auth-description">
-          Create or access your personal notepad. <strong>Notice:</strong> Once you publish a note, it cannot be modified or deleted by users. Only the system Administrator has removal privileges.
+          A clean, beautiful notepad to write, format, edit, and organize all your thoughts and ideas.
         </p>
 
         <form id="userLoginForm" class="auth-form" onsubmit="return false;">
           <div class="form-group">
             <label for="usernameInput" class="form-label">
-              <span>Enter Your Username</span>
-              <span class="form-hint">Unique identity</span>
+              <span>Enter Your Name or Username</span>
+              <span class="form-hint">Personal space</span>
             </label>
             <div class="input-with-icon">
               <i data-lucide="user" class="input-icon"></i>
@@ -133,32 +127,16 @@
           </div>
 
           <button type="submit" id="enterNotepadBtn" class="btn-silver-solid full-width">
-            <span>Continue to My Notepad</span>
+            <span>Open My Notepad</span>
             <i data-lucide="arrow-right"></i>
           </button>
         </form>
-
-        <div class="auth-footer-notice">
-          <i data-lucide="info"></i>
-          <span>Are you the Administrator? Click <strong>Admin Portal</strong> at the top right to manage users & content.</span>
-        </div>
       </div>
     </section>
 
     <!-- 2. USER DASHBOARD & NOTEPAD VIEW -->
     <section id="notepadSection" class="view-section hidden">
       <div class="notepad-layout">
-        
-        <!-- Top Banner: Immutable Policy Notice -->
-        <div class="immutable-banner">
-          <div class="banner-badge">
-            <i data-lucide="lock"></i>
-            <span>Policy: Append-Only Notepad</span>
-          </div>
-          <p class="banner-text">
-            Notes added under <strong id="bannerUsername">...</strong> are permanently recorded in the local archive. Regular users cannot delete or edit saved notes. Please review carefully before confirming your entry.
-          </p>
-        </div>
 
         <div class="notepad-grid">
           
@@ -169,7 +147,7 @@
                 <i data-lucide="square-pen" class="panel-icon"></i>
                 <h2>Draft New Note</h2>
               </div>
-              <span class="badge-status">Protected Session</span>
+              <span class="badge-status">Personal Notes</span>
             </div>
 
             <!-- Note Title Input -->
@@ -299,19 +277,19 @@
                   <span>Reset Canvas</span>
                 </button>
                 <button type="button" id="submitNoteBtn" class="btn-silver-solid">
-                  <i data-lucide="file-plus"></i>
-                  <span>Commit & Save Note</span>
+                  <i data-lucide="plus-circle"></i>
+                  <span>Save Note</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- RIGHT / BOTTOM COLUMN: PERMANENT USER ARCHIVE -->
+          <!-- RIGHT / BOTTOM COLUMN: USER SAVED NOTES -->
           <div class="archive-panel">
             <div class="panel-header">
               <div class="panel-title-wrap">
                 <i data-lucide="archive" class="panel-icon"></i>
-                <h2>Your Saved Archive</h2>
+                <h2>Your Notes</h2>
               </div>
               <span id="notesCountBadge" class="badge-count">0 Notes</span>
             </div>
@@ -416,215 +394,26 @@
     </div>
   </div>
 
-  <!-- MODAL: USER COMMITMENT VERIFICATION -->
-  <div id="verificationModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
-    <div class="modal-box silver-box warning-border">
-      <div class="modal-header">
-        <div class="modal-title-wrap warning-accent">
-          <i data-lucide="alert-triangle"></i>
-          <h3>Confirmation: Permanent Record</h3>
-        </div>
-        <button class="modal-close-btn" data-close-modal="verificationModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="warning-callout">
-          <h4>PLEASE VERIFY BEFORE SAVING:</h4>
-          <p>
-            Once you add this note, <strong>YOU CANNOT DELETE OR MODIFY IT</strong>.
-          </p>
-          <ul>
-            <li>Regular users possess append-only rights.</li>
-            <li>Only the system <strong>Administrator</strong> can alter or remove this content.</li>
-            <li>The note will remain saved under your username permanently.</li>
-          </ul>
-        </div>
-        <div class="note-summary-preview">
-          <span class="summary-label">Title Preview:</span>
-          <div id="verifyNoteTitle" class="summary-title">Untitled Note</div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-silver-ghost" data-close-modal="verificationModal">
-          <i data-lucide="x"></i>
-          <span>Cancel & Keep Editing</span>
-        </button>
-        <button id="confirmCommitNoteBtn" class="btn-silver-solid warning-btn">
-          <i data-lucide="check-circle-2"></i>
-          <span>I Understand, Save Note</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: ADMIN LOGIN -->
-  <div id="adminLoginModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
-    <div class="modal-box silver-box">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <i data-lucide="shield-check"></i>
-          <h3>Administrator Authentication</h3>
-        </div>
-        <button class="modal-close-btn" data-close-modal="adminLoginModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-lead">
-          Elevated clearance required. Administrators have full privileges to remove users, delete specific notes, or modify existing content.
-        </p>
-        <form id="adminLoginForm" onsubmit="return false;">
-          <div class="form-group">
-            <label for="adminPasswordInput" class="form-label">
-              <span>Admin Master Password</span>
-            </label>
-            <div class="input-with-icon">
-              <i data-lucide="lock" class="input-icon"></i>
-              <input 
-                type="password" 
-                id="adminPasswordInput" 
-                class="silver-input" 
-                placeholder="Enter admin password"
-                required
-              >
-            </div>
-            <div id="adminLoginError" class="auth-feedback error hidden">
-              Incorrect Admin Password.
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-silver-ghost" data-close-modal="adminLoginModal">Cancel</button>
-        <button id="submitAdminLoginBtn" class="btn-silver-solid">
-          <i data-lucide="key"></i>
-          <span>Authenticate as Admin</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL / VIEW: ADMIN CONTROL CENTER -->
-  <div id="adminDashboardModal" class="modal-overlay hidden full-modal" role="dialog" aria-modal="true">
-    <div class="modal-box silver-box admin-control-box">
-      <div class="admin-top-bar">
-        <div class="admin-brand">
-          <div class="admin-badge">
-            <i data-lucide="shield-alert"></i>
-            <span>ADMIN CLEARANCE ACTIVE</span>
-          </div>
-          <h2>System Command & Content Oversight</h2>
-        </div>
-        <div class="admin-top-actions">
-          <button id="refreshAdminDataBtn" class="btn-silver-outline btn-sm" title="Refresh Database">
-            <i data-lucide="refresh-cw"></i>
-            <span>Refresh</span>
-          </button>
-          <button id="adminExitBtn" class="btn-silver-solid btn-sm">
-            <i data-lucide="log-out"></i>
-            <span>Exit Admin Mode</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Stats Overview -->
-      <div class="admin-stats-grid">
-        <div class="admin-stat-card">
-          <div class="stat-num" id="statTotalUsers">0</div>
-          <div class="stat-desc">Registered Users</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="stat-num" id="statTotalNotes">0</div>
-          <div class="stat-desc">Total Archived Notes</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="stat-num" id="statStorageStatus">Local DB</div>
-          <div class="stat-desc">Persistent Storage Active</div>
-        </div>
-      </div>
-
-      <!-- Admin Tabs: User Directory vs Notes Directory -->
-      <div class="admin-nav-tabs">
-        <button id="adminTabUsers" class="admin-tab active">
-          <i data-lucide="users"></i>
-          <span>User Management</span>
-        </button>
-        <button id="adminTabNotes" class="admin-tab">
-          <i data-lucide="file-text"></i>
-          <span>All Notes & Moderation</span>
-        </button>
-      </div>
-
-      <!-- TAB 1: USER MANAGEMENT -->
-      <div id="adminPanelUsers" class="admin-tab-content active">
-        <div class="panel-lead-row">
-          <div>
-            <h3>User Directory</h3>
-            <p>Delete a username to completely wipe the user along with all notes created by them.</p>
-          </div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Joined Date</th>
-                <th>Total Notes</th>
-                <th>Bulk Actions</th>
-                <th>Account Clearance</th>
-              </tr>
-            </thead>
-            <tbody id="adminUsersTableBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TAB 2: ALL NOTES EXPLORER & MODERATION -->
-      <div id="adminPanelNotes" class="admin-tab-content hidden">
-        <div class="panel-lead-row">
-          <div>
-            <h3>Master Notes Archive</h3>
-            <p>Filter notes by user, modify rich text details, or delete specific entries.</p>
-          </div>
-          <div class="admin-filter-row">
-            <label for="adminUserFilter" class="sr-only">Filter by User</label>
-            <select id="adminUserFilter" class="silver-input select-filter">
-              <option value="ALL">All Users</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="adminNotesFeed" class="admin-notes-grid">
-          <!-- Dynamically populated notes with Admin Edit & Delete buttons -->
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL: ADMIN EDIT NOTE (Allows Admin to modify title, text, formatting) -->
-  <div id="adminEditModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <!-- MODAL: EDIT NOTE -->
+  <div id="editNoteModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="modal-box silver-box edit-note-box">
       <div class="modal-header">
         <div class="modal-title-wrap">
           <i data-lucide="file-edit"></i>
-          <h3>Admin Note Modification</h3>
+          <h3>Edit Note</h3>
         </div>
-        <button class="modal-close-btn" data-close-modal="adminEditModal">&times;</button>
+        <button class="modal-close-btn" data-close-modal="editNoteModal">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="admin-edit-meta">
-          <span>Author: <strong id="adminEditAuthor">Username</strong></span>
-          <span>Note ID: <code id="adminEditNoteId">#id</code></span>
+        <input type="hidden" id="editNoteId">
+        <div class="form-group">
+          <label for="editNoteTitleInput" class="form-label">Note Title</label>
+          <input type="text" id="editNoteTitleInput" class="silver-input" placeholder="Note Title...">
         </div>
         <div class="form-group">
-          <label for="adminEditTitleInput" class="form-label">Note Title</label>
-          <input type="text" id="adminEditTitleInput" class="silver-input" placeholder="Note Title">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Note Content (Rich HTML)</label>
+          <label class="form-label">Note Content</label>
           <div 
-            id="adminEditContentCanvas" 
+            id="editNoteContentCanvas" 
             class="notepad-canvas edit-canvas" 
             contenteditable="true"
             spellcheck="true"
@@ -632,38 +421,38 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-silver-ghost" data-close-modal="adminEditModal">Cancel</button>
-        <button id="saveAdminEditBtn" class="btn-silver-solid">
+        <button class="btn-silver-ghost" data-close-modal="editNoteModal">Cancel</button>
+        <button id="saveEditNoteBtn" class="btn-silver-solid">
           <i data-lucide="check"></i>
-          <span>Save Changes as Admin</span>
+          <span>Save Changes</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: ADMIN CONFIRM DELETE -->
-  <div id="adminConfirmDeleteModal" class="modal-overlay hidden" style="z-index: 500;" role="dialog" aria-modal="true">
+  <!-- MODAL: CONFIRM DELETE NOTE -->
+  <div id="confirmDeleteModal" class="modal-overlay hidden" style="z-index: 500;" role="dialog" aria-modal="true">
     <div class="modal-box silver-box warning-border">
       <div class="modal-header">
         <div class="modal-title-wrap warning-accent">
           <i data-lucide="trash-2"></i>
-          <h3 id="adminDeleteModalHeading">Confirm Deletion</h3>
+          <h3 id="deleteModalHeading">Delete Note</h3>
         </div>
-        <button class="modal-close-btn" data-close-modal="adminConfirmDeleteModal">&times;</button>
+        <button class="modal-close-btn" data-close-modal="confirmDeleteModal">&times;</button>
       </div>
       <div class="modal-body">
-        <p id="adminDeleteModalMessage" style="font-size: 0.95rem; line-height: 1.5; color: var(--text-primary); margin-bottom: 0.75rem;">
-          Are you sure you want to delete this?
+        <p style="font-size: 0.95rem; line-height: 1.5; color: var(--text-primary); margin-bottom: 0.75rem;">
+          Are you sure you want to delete this note?
         </p>
-        <div id="adminDeleteTargetPreview" class="note-summary-preview">
-          <!-- Preview of note title or username -->
+        <div id="deleteTargetPreview" class="note-summary-preview">
+          <!-- Preview of note title -->
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-silver-ghost" data-close-modal="adminConfirmDeleteModal">Cancel</button>
-        <button id="adminConfirmDeleteExecuteBtn" class="btn-silver-solid warning-btn">
+        <button class="btn-silver-ghost" data-close-modal="confirmDeleteModal">Cancel</button>
+        <button id="confirmDeleteExecuteBtn" class="btn-silver-solid warning-btn">
           <i data-lucide="trash-2"></i>
-          <span>Confirm & Delete</span>
+          <span>Delete Note</span>
         </button>
       </div>
     </div>
@@ -672,6 +461,6 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script src="app.js?v=2.0"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>
