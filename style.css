@@ -1435,6 +1435,50 @@ html, body {
   height: 14px;
 }
 
+.btn-edit-note,
+.btn-delete-note {
+  padding: 0.32rem 0.65rem !important;
+  font-size: 0.78rem !important;
+  border-radius: var(--radius-sm) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  border: 1px solid var(--border-medium) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  cursor: pointer;
+  transition: all 0.18s ease !important;
+}
+
+.btn-edit-note {
+  color: var(--text-secondary) !important;
+}
+
+.btn-edit-note:hover {
+  background: var(--color-accent-light) !important;
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent-text) !important;
+  transform: translateY(-1px);
+}
+
+.btn-delete-note {
+  color: #dc2626 !important;
+}
+
+.btn-delete-note:hover {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+  transform: translateY(-1px);
+}
+
+.btn-edit-note i,
+.btn-edit-note svg,
+.btn-delete-note i,
+.btn-delete-note svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
 .note-card.dragging {
   opacity: 0.45;
   transform: scale(0.98);
